@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +16,8 @@ class NewTransaction extends StatefulWidget {
 class _NewTransactionState extends State<NewTransaction> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
-  DateTime _selectedDate;
+  DateTime _selectedDate = DateTime.now();
+  bool _showIOSDatePicker = false;
 
   void _handleSubmit() {
     final enteredTitle = _titleController.text;
@@ -52,26 +56,30 @@ class _NewTransactionState extends State<NewTransaction> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Text(
-                    _selectedDate == null
-                        ? 'No date selected'
-                        : 'Selected date: ${DateFormat('dd/MM/yyyy').format(_selectedDate)}',
+                  Flexible(
+                    child: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
                   ),
                   FlatButton(
                     onPressed: () {
-                      return showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      ).then((selectedDate) {
-                        if (selectedDate == null) {
-                          return;
-                        }
+                      if (Platform.isIOS) {
                         setState(() {
-                          _selectedDate = selectedDate;
+                          _showIOSDatePicker = true;
                         });
-                      });
+                      } else {
+                        showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        ).then((selectedDate) {
+                          if (selectedDate == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedDate = selectedDate;
+                          });
+                        });
+                      }
                     },
                     child: Text(
                       'Select date',
@@ -83,8 +91,38 @@ class _NewTransactionState extends State<NewTransaction> {
                 ],
               ),
             ),
+            if (Platform.isIOS && _showIOSDatePicker)
+              Container(
+                height: 50,
+                child: Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: CupertinoDatePicker(
+                          initialDateTime: _selectedDate,
+                          maximumDate: DateTime.now(),
+                          maximumYear: DateTime.now().year,
+                          minimumDate: DateTime(2020),
+                          minimumYear: DateTime.now().year,
+                          onDateTimeChanged: (selectedDate) {
+                            setState(() {
+                              _selectedDate = selectedDate;
+                            });
+                          }),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(
+              height: 20,
+            ),
             RaisedButton(
-              child: Text('Add Transaction'),
+              child: Text(
+                'Add Transaction',
+                style: TextStyle(
+                  color: Colors.white,
+                  letterSpacing: 1.5,
+                ),
+              ),
               color: Theme.of(context).primaryColor,
               textColor: Theme.of(context).textTheme.button.color,
               onPressed: _handleSubmit,
